@@ -1,0 +1,55 @@
+﻿<Window x:Class="BatchRenamerGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BatchRenamerGUI"
+        mc:Ignorable="d"
+        Title="Batch Renamer" Height="450" Width="800" MinHeight="450" MinWidth="760" KeyDown="CheckAbout">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition />
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock  Grid.Row="0" Grid.Column="0" Text="Directory:"/>
+        <Border     x:Name="directoryErrorBorder" Grid.Row="0" Grid.Column="2" BorderThickness="0, 0, 0, 1.5" BorderBrush="Transparent">
+            <TextBox x:Name="textDirectory" TextChanged="ValidatePath"/>
+        </Border>
+        <Button     Grid.Row="0" Grid.Column="4" Content="..." ToolTip="Browse directory..." Padding="8, 0" Click="SelectDirectory"/>
+        <TextBlock  Grid.Row="2" Grid.Column="0" Text="Search:"/>
+        <TextBox    x:Name="textSearch" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" TextChanged="UpdateFilters"/>
+        <TextBlock  Grid.Row="4" Grid.Column="0" Text="Replace:"/>
+        <TextBox    x:Name="textReplace" Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" TextChanged="UpdateFilters"/>
+        <DockPanel  Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="3">
+            <Button x:Name="buttonRename" DockPanel.Dock="Right" Content="Rename" Padding="8, 0" IsEnabled="False" Click="RenameBatch"/>
+            <StackPanel Orientation="Horizontal">
+                <CheckBox x:Name="checkRegex" Content="Use regular expression" Checked="UpdateFilters" Unchecked="UpdateFilters"/>
+                <Rectangle Width="24"/>
+                <CheckBox x:Name="checkExtension" Content="Modify file extension" Checked="UpdateFilters" Unchecked="UpdateFilters"/>
+                <Rectangle Width="24"/>
+                <CheckBox x:Name="checkRecursive" Content="Include subdirectories" Checked="UpdateFilters" Unchecked="UpdateFilters"/>
+                <Rectangle Width="24"/>
+                <CheckBox x:Name="checkFolders" Content="Rename folders" Checked="UpdateFilters" Unchecked="UpdateFilters"/>
+            </StackPanel>
+        </DockPanel>
+        <Border      Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="5" BorderThickness="0.5" BorderBrush="Black">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="listPreview"/>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
