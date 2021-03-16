@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BatchRenamerGUI"
         mc:Ignorable="d"
-        Title="Batch Renamer" Height="450" Width="800" MinHeight="450" MinWidth="760" KeyDown="CheckAbout">
+        Title="Batch Renamer" Height="450" Width="800" MinHeight="450" MinWidth="760" KeyDown="HandleKey">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

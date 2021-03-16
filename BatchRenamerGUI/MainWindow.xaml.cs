@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using MessageBox = System.Windows.MessageBox;
 using Path = System.IO.Path;
 using static BatchRenamerGUI.AssertionFailure;
+using System.Threading.Tasks;
 
 namespace BatchRenamerGUI
 { 
@@ -38,6 +39,7 @@ namespace BatchRenamerGUI
             public string OldName;
             public string NewName;
         }
+
         private List<DirectoryNameDelta> GetRenamingBatch()
         {
             var batch = new List<DirectoryNameDelta>();
@@ -255,10 +257,80 @@ namespace BatchRenamerGUI
             UpdatePreview(sender, null);
         }
 
-        private void CheckAbout(object sender, System.Windows.Input.KeyEventArgs e)
+        private List<(string directory, string filename)> GetFilesToRename()
+        {
+            var files_to_rename = new List<(string, string)>();
+            var root_directory = textDirectory.Text.Trim('\\', '/');
+            if (Directory.Exists(root_directory))
+            {
+                var directories_to_search = new List<string> { root_directory };
+                if (IncludeSubdirectories)
+                    directories_to_search.AddRange(Directory.GetDirectories(root_directory, "*", SearchOption.AllDirectories));
+                foreach (var directory in directories_to_search)
+                    files_to_rename.AddRange(Directory.GetFiles(directory, "*").Select(i => (directory, Path.GetFileName(i))));
+            }
+            return files_to_rename;
+        }
+
+        private void WriteTemplateFile(List<(string directory, string filename)> to_rename)
+        {
+            var root_directory = textDirectory.Text.Trim('\\', '/');
+            int pad_legth = (int)Math.Ceiling(Math.Log10(to_rename.Count));
+            var contents = string.Join("\n", to_rename.Select((item, index) =>
+                index.ToString().PadLeft(pad_legth, '0') + ": " + (item.directory != root_directory ? item.directory.Remove(0, root_directory.Length + 1) + '\\': null) + item.filename));
+            using (var writer = new StreamWriter(Path.Combine(root_directory, "batch.renaming"), false))
+                writer.Write(contents);
+        }
+
+        private List<(int index, string filename)> ReadTemplateFile()
+        {
+            Regex line_regex = new Regex(@"(\d+):\s*(.+)");
+            var root_directory = textDirectory.Text.Trim('\\', '/');
+            var template_filepath = Path.Combine(root_directory, "batch.renaming");
+            if (File.Exists(template_filepath))
+            {
+                using (var reader = new StreamReader(template_filepath))
+                {
+                    var contents = reader.ReadToEnd();
+                    var lines = contents.Split('\n').Select(i => i.Trim()).Where(i => !string.IsNullOrWhiteSpace(i));
+                    var matches = lines.Select(l => line_regex.Match(l)).Where(l => l.Success);
+                    return matches.Select(m => (int.Parse(m.Groups[1].Value), m.Groups[2].Value.Trim())).ToList();
+                }
+            } else return null;
+        }
+
+        private void DeleteTemplateFile()
+        {
+            var root_directory = textDirectory.Text.Trim('\\', '/');
+            File.Delete(Path.Combine(root_directory, "batch.renaming"));
+        }
+
+        private void HandleKey(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.F1)
                 MessageBox.Show("Batch Renamer by Gorky Rojas", "About...", MessageBoxButton.OK, MessageBoxImage.Information);
+            else if (e.Key == System.Windows.Input.Key.F12) {
+                var to_rename = GetFilesToRename();
+                WriteTemplateFile(to_rename);
+                MessageBox.Show("Modify the file names in the text file, then click OK to apply.", "Text-file batch renaming...", MessageBoxButton.OK, MessageBoxImage.Information);
+                var result = ReadTemplateFile();
+                var root_directory = textDirectory.Text.Trim('\\', '/');
+                int successful = 0;
+                foreach (var item in result.Where(i => i.index < to_rename.Count)) {
+                    var original = to_rename[item.index];
+                    var old_name = Path.Combine(original.directory, original.filename);
+                    var new_name = Path.Combine(root_directory, item.filename);
+                    if (new_name != old_name) {
+                        try {
+                            Directory.Move(old_name, new_name);
+                            successful++;
+                        } catch (Exception ex) { ; }
+                    }
+                }
+                DeleteTemplateFile();
+                if (successful > 0)
+                    MessageBox.Show($"{successful} archivos renombrados.", "Text-file batch renaming result", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
     }
 
