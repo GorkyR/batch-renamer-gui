@@ -305,32 +305,58 @@ namespace BatchRenamerGUI
             File.Delete(Path.Combine(root_directory, "batch.renaming"));
         }
 
+        private void TemplateBatchRename()
+        {
+            var root_directory = textDirectory.Text.Trim('\\', '/');
+
+            var to_rename = GetFilesToRename();
+            WriteTemplateFile(to_rename);
+
+            var conf_directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "batch_renamer");
+            var editor_conf_filename = Path.Combine(conf_directory, "editor.conf");
+            string editor_path;
+            if (File.Exists(editor_conf_filename)) {
+                using (var reader = new StreamReader(editor_conf_filename))
+                    editor_path = reader.ReadToEnd().Trim();
+            } else {
+                editor_path = Environment.ExpandEnvironmentVariables("%windir%\\notepad.exe");
+                Directory.CreateDirectory(conf_directory);
+                using (var writer = new StreamWriter(editor_conf_filename))
+                    writer.Write(editor_path);
+            }
+
+            if (File.Exists(editor_path))
+                System.Diagnostics.Process.Start(editor_path, Path.Combine(root_directory, "batch.renaming"));
+
+            MessageBox.Show("Modify the file names in the text file, then click OK to apply.", "Text-file batch renaming...", MessageBoxButton.OK, MessageBoxImage.Information);
+            var result = ReadTemplateFile();
+            int successful = 0;
+            foreach (var item in result.Where(i => i.index < to_rename.Count))
+            {
+                var original = to_rename[item.index];
+                var old_name = Path.Combine(original.directory, original.filename);
+                var new_name = Path.Combine(root_directory, item.filename);
+                if (new_name != old_name)
+                {
+                    try
+                    {
+                        Directory.Move(old_name, new_name);
+                        successful++;
+                    }
+                    catch (Exception ex) {; }
+                }
+            }
+            DeleteTemplateFile();
+            if (successful > 0)
+                MessageBox.Show($"{successful} archivos renombrados.", "Text-file batch renaming result", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void HandleKey(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.F1)
                 MessageBox.Show("Batch Renamer by Gorky Rojas", "About...", MessageBoxButton.OK, MessageBoxImage.Information);
-            else if (e.Key == System.Windows.Input.Key.F12) {
-                var to_rename = GetFilesToRename();
-                WriteTemplateFile(to_rename);
-                MessageBox.Show("Modify the file names in the text file, then click OK to apply.", "Text-file batch renaming...", MessageBoxButton.OK, MessageBoxImage.Information);
-                var result = ReadTemplateFile();
-                var root_directory = textDirectory.Text.Trim('\\', '/');
-                int successful = 0;
-                foreach (var item in result.Where(i => i.index < to_rename.Count)) {
-                    var original = to_rename[item.index];
-                    var old_name = Path.Combine(original.directory, original.filename);
-                    var new_name = Path.Combine(root_directory, item.filename);
-                    if (new_name != old_name) {
-                        try {
-                            Directory.Move(old_name, new_name);
-                            successful++;
-                        } catch (Exception ex) { ; }
-                    }
-                }
-                DeleteTemplateFile();
-                if (successful > 0)
-                    MessageBox.Show($"{successful} archivos renombrados.", "Text-file batch renaming result", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+            else if (e.Key == System.Windows.Input.Key.F12)
+                TemplateBatchRename();
         }
     }
 
