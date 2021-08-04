@@ -86,8 +86,8 @@ namespace BatchRenamerGUI
                                 OldName = $"{name}{ext}",
                                 SpansOriginal = matches,
                                 NewName = (regex is null)
-                                    ? name.Replace(pattern, replacement.FilterForFilename())
-                                    : regex.Replace(name, replacement).FilterForFilename()
+                                    ? name.Replace(pattern, replacement.FixAndFilterForFilename())
+                                    : regex.Replace(name, replacement).FixAndFilterForFilename()
                             };
                             matchingRename.NewName += ext;
                             var spansReplacement = new List<(int, int)>(matches.Count);
@@ -98,8 +98,8 @@ namespace BatchRenamerGUI
                                 // UGLY!!! UGH SUCKS!!!
                                 // Re-does the work of building the replacement string multiple times just to get the length of the span.
                                 int spanLength = (regex is null)
-                                    ? replacement.FilterForFilename().Length
-                                    : regex.Replace(name.Substring(span.offset, span.length), replacement).FilterForFilename().Length;
+                                    ? replacement.FixAndFilterForFilename().Length
+                                    : regex.Replace(name.Substring(span.offset, span.length), replacement).FixAndFilterForFilename().Length;
                                 spansReplacement.Add((spanOffset, spanLength));
                                 offset += (spanLength - span.length);
                             }
@@ -335,7 +335,7 @@ namespace BatchRenamerGUI
             {
                 var original = to_rename[item.index];
                 var old_name = Path.Combine(original.directory, original.filename);
-                var new_name = Path.Combine(root_directory, item.filename);
+                var new_name = Path.Combine(root_directory, item.filename.FixAndFilterForFilename());
                 if (new_name != old_name)
                 {
                     try
@@ -389,8 +389,8 @@ namespace BatchRenamerGUI
         public static bool IsEmpty(this string text) => text.Length == 0;
         public static bool IsNotEmpty(this string text) => text.Length > 0;
 
-        public static string FilterForFilename(this string text) =>
-            string.Join(string.Empty, text.Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
+        public static string FixAndFilterForFilename(this string text) =>
+            string.Join(string.Empty, text.Replace(":", " -").Where(c => !Path.GetInvalidFileNameChars().Contains(c)));
     }
 
     [Serializable]
